@@ -2,167 +2,1479 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>لوحة الأدمن</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+  <title>لوحة التحكم - موقع الأخبار</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, Arial; margin: 24px; max-width: 820px; }
-    .row { display:flex; gap:10px; align-items:center; justify-content:space-between; }
-    .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin-top: 12px; }
-    input, textarea, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 10px; border:1px solid #ccc; }
-    textarea { min-height: 110px; }
-    button { cursor: pointer; }
-    .meta { opacity:.7; font-size: 13px; margin-top: 6px; }
-    .err { color:#b00020; margin-top: 10px; }
-    img { max-width: 100%; border-radius: 10px; margin-top: 8px; }
-    .btnRow { display:flex; gap:10px; align-items:center; margin-top:10px; }
-    .btnSmall { width:auto; padding:8px 12px; }
+    :root {
+      --primary: #4361ee;
+      --primary-light: #eef2ff;
+      --secondary: #7209b7;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --gray: #6c757d;
+      --gray-light: #e9ecef;
+      --success: #4cc9f0;
+      --warning: #ff9e00;
+      --danger: #f72585;
+      --border-radius: 16px;
+      --shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Cairo', 'Segoe UI', system-ui, sans-serif;
+      background-color: #f8fafc;
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Dashboard Header */
+    .dashboard-header {
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white;
+      padding: 20px 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      font-size: 24px;
+    }
+
+    .site-title h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .site-title p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background-color: rgba(255, 255, 255, 0.15);
+      padding: 8px 15px;
+      border-radius: 30px;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      background-color: white;
+      color: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .user-name {
+      font-weight: 600;
+    }
+
+    .logout-btn {
+      background-color: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+
+    .logout-btn:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    /* Dashboard Layout */
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 30px;
+      padding: 40px 0;
+    }
+
+    @media (min-width: 992px) {
+      .dashboard-layout {
+        grid-template-columns: 1fr 350px;
+      }
+    }
+
+    /* Main Content */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-card {
+      background-color: white;
+      border-radius: var(--border-radius);
+      padding: 25px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: var(--transition);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+    }
+
+    .stat-info h3 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .stat-info p {
+      font-size: 14px;
+      color: var(--gray);
+    }
+
+    /* Form Card */
+    .form-card {
+      background-color: white;
+      border-radius: var(--border-radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--gray-light);
+    }
+
+    .card-title i {
+      color: var(--primary);
+      font-size: 22px;
+    }
+
+    .card-title h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 15px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid var(--gray-light);
+      border-radius: 12px;
+      font-size: 16px;
+      font-family: inherit;
+      background-color: white;
+      transition: var(--transition);
+      color: var(--dark);
+    }
+
+    textarea.form-control {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+    }
+
+    .form-control::placeholder {
+      color: #a0a0a0;
+    }
+
+    .file-upload {
+      position: relative;
+      margin-bottom: 25px;
+    }
+
+    .file-input {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .file-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      border: 2px dashed var(--gray-light);
+      border-radius: 12px;
+      background-color: var(--light);
+      text-align: center;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .file-label:hover, .file-label.has-file {
+      border-color: var(--primary);
+      background-color: var(--primary-light);
+    }
+
+    .file-icon {
+      font-size: 40px;
+      color: var(--gray);
+      margin-bottom: 15px;
+    }
+
+    .file-text h4 {
+      font-size: 16px;
+      margin-bottom: 5px;
+      color: var(--dark);
+    }
+
+    .file-text p {
+      font-size: 13px;
+      color: var(--gray);
+    }
+
+    .file-name {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 15px;
+    }
+
+    .btn {
+      padding: 15px 30px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .btn-primary {
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(to right, var(--primary), #651ea0);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(67, 97, 238, 0.25);
+    }
+
+    .btn-secondary {
+      background-color: var(--gray-light);
+      color: var(--dark);
+    }
+
+    .btn-secondary:hover {
+      background-color: #d8d8d8;
+      transform: translateY(-2px);
+    }
+
+    /* Messages */
+    .message {
+      padding: 15px 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      display: none;
+    }
+
+    .message.show {
+      display: flex;
+    }
+
+    .message-success {
+      background-color: rgba(76, 201, 240, 0.1);
+      border: 1px solid rgba(76, 201, 240, 0.3);
+      color: #0a7e9e;
+    }
+
+    .message-error {
+      background-color: rgba(247, 37, 133, 0.1);
+      border: 1px solid rgba(247, 37, 133, 0.3);
+      color: var(--danger);
+    }
+
+    /* News List */
+    .news-list-card {
+      background-color: white;
+      border-radius: var(--border-radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+
+    .news-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .news-list-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .news-list-title i {
+      color: var(--primary);
+      font-size: 22px;
+    }
+
+    .news-list-title h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .refresh-news-btn {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+
+    .refresh-news-btn:hover {
+      background-color: var(--primary);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .news-list {
+      max-height: 600px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+
+    .news-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .news-list::-webkit-scrollbar-track {
+      background: var(--gray-light);
+      border-radius: 10px;
+    }
+
+    .news-list::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 10px;
+    }
+
+    .news-item {
+      padding: 25px;
+      border-radius: 12px;
+      background-color: var(--light);
+      margin-bottom: 20px;
+      border: 1px solid var(--gray-light);
+      transition: var(--transition);
+    }
+
+    .news-item:hover {
+      border-color: var(--primary);
+      background-color: white;
+    }
+
+    .news-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .news-item-content {
+      margin-bottom: 20px;
+    }
+
+    .news-item-text {
+      font-size: 16px;
+      line-height: 1.7;
+      margin-bottom: 15px;
+    }
+
+    .news-item-image {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+
+    .news-item-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 15px;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      font-size: 13px;
+      color: var(--gray);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .news-item-date {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .news-item-source {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-weight: 600;
+    }
+
+    .news-item-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn-sm {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition;
+    }
+
+    .btn-danger {
+      background-color: rgba(247, 37, 133, 0.1);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger);
+      color: white;
+    }
+
+    .empty-news {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray);
+    }
+
+    .empty-icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .empty-news h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    /* Sidebar */
+    .dashboard-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .sidebar-card {
+      background-color: white;
+      border-radius: var(--border-radius);
+      padding: 25px;
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--gray-light);
+    }
+
+    .sidebar-title i {
+      color: var(--primary);
+      font-size: 20px;
+    }
+
+    .sidebar-title h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .quick-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .quick-stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray-light);
+    }
+
+    .quick-stat-item:last-child {
+      border-bottom: none;
+    }
+
+    .quick-stat-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .quick-stat-label i {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+    }
+
+    .quick-stat-value {
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .recent-activity {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray-light);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-text {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .activity-time {
+      font-size: 12px;
+      color: var(--gray);
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      }
+    }
+
+    @media (max-width: 992px) {
+      .dashboard-sidebar {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .user-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+      
+      .form-actions {
+        flex-direction: column;
+      }
+      
+      .news-list-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .container {
+        padding: 0 15px;
+      }
+      
+      .dashboard-header {
+        padding: 15px 0;
+      }
+      
+      .site-title h1 {
+        font-size: 20px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-card, .news-list-card, .sidebar-card {
+        padding: 20px;
+      }
+      
+      .dashboard-layout {
+        padding: 30px 0;
+        gap: 20px;
+      }
+    }
+
+    /* Loading Animation */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid var(--gray-light);
+      border-top: 5px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <div class="row">
-    <h2 style="margin:0;">لوحة الأدمن</h2>
-    <div style="display:flex; gap:10px; align-items:center;">
-      <button id="logout" class="btnSmall">خروج</button>
+  <!-- Dashboard Header -->
+  <header class="dashboard-header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo-container">
+          <div class="logo">
+            <i class="fas fa-newspaper"></i>
+          </div>
+          <div class="site-title">
+            <h1>لوحة تحكم الأدمن</h1>
+            <p>إدارة محتوى موقع الأخبار</p>
+          </div>
+        </div>
+        
+        <div class="user-actions">
+          <div class="user-info">
+            <div class="user-avatar" id="userAvatar">أ</div>
+            <div class="user-name" id="userName">الأدمن</div>
+          </div>
+          <button class="logout-btn" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>تسجيل الخروج</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Content -->
+  <div class="container">
+    <div class="dashboard-layout">
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(to right, #4361ee, #3a56d4);">
+              <i class="fas fa-newspaper"></i>
+            </div>
+            <div class="stat-info">
+              <h3 id="totalNews">0</h3>
+              <p>إجمالي الأخبار</p>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(to right, #7209b7, #651ea0);">
+              <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="stat-info">
+              <h3 id="todayNews">0</h3>
+              <p>أخبار اليوم</p>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(to right, #4cc9f0, #3ab4d9);">
+              <i class="fas fa-image"></i>
+            </div>
+            <div class="stat-info">
+              <h3 id="withImages">0</h3>
+              <p>أخبار بالصور</p>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(to right, #ff9e00, #e68a00);">
+              <i class="fas fa-user-edit"></i>
+            </div>
+            <div class="stat-info">
+              <h3 id="lastActivity">-</h3>
+              <p>آخر نشاط</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Add News Form -->
+        <div class="form-card">
+          <div class="card-title">
+            <i class="fas fa-plus-circle"></i>
+            <h2>إضافة خبر جديد</h2>
+          </div>
+          
+          <form id="addNewsForm">
+            <div class="form-group">
+              <label class="form-label" for="newsText">نص الخبر *</label>
+              <textarea 
+                id="newsText" 
+                class="form-control" 
+                placeholder="أدخل نص الخبر هنا..." 
+                required
+                rows="5"
+              ></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="newsSource">المصدر (اختياري)</label>
+              <input 
+                type="text" 
+                id="newsSource" 
+                class="form-control" 
+                placeholder="مثال: وكالة الأنباء"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">صورة الخبر (اختياري)</label>
+              <div class="file-upload">
+                <input type="file" id="newsImage" class="file-input" accept="image/*">
+                <label for="newsImage" class="file-label" id="fileLabel">
+                  <div class="file-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                  </div>
+                  <div class="file-text">
+                    <h4>انقر لرفع صورة</h4>
+                    <p>JPEG, PNG أو GIF - أقصى حجم 2MB</p>
+                  </div>
+                  <div class="file-name" id="fileName"></div>
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="publishBtn">
+                <i class="fas fa-paper-plane"></i>
+                <span>نشر الخبر</span>
+              </button>
+              <button type="reset" class="btn btn-secondary" id="resetBtn">
+                <i class="fas fa-undo"></i>
+                <span>مسح النموذج</span>
+              </button>
+            </div>
+          </form>
+          
+          <div class="message" id="successMessage">
+            <i class="fas fa-check-circle"></i>
+            <span>تم نشر الخبر بنجاح!</span>
+          </div>
+          
+          <div class="message" id="errorMessage">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="errorText">حدث خطأ أثناء النشر. يرجى المحاولة مرة أخرى.</span>
+          </div>
+        </div>
+        
+        <!-- News List -->
+        <div class="news-list-card">
+          <div class="news-list-header">
+            <div class="news-list-title">
+              <i class="fas fa-list"></i>
+              <h2>الأخبار المنشورة</h2>
+            </div>
+            <button class="refresh-news-btn" id="refreshNewsBtn">
+              <i class="fas fa-sync-alt"></i>
+              <span>تحديث القائمة</span>
+            </button>
+          </div>
+          
+          <div class="news-list" id="newsList">
+            <!-- News items will be loaded here -->
+            <div class="loading">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      <!-- Sidebar -->
+      <aside class="dashboard-sidebar">
+        <!-- Quick Stats -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <i class="fas fa-chart-bar"></i>
+            <h3>إحصائيات سريعة</h3>
+          </div>
+          
+          <div class="quick-stats">
+            <div class="quick-stat-item">
+              <div class="quick-stat-label">
+                <i class="fas fa-newspaper" style="background-color: #4361ee;"></i>
+                <span>الأخيار المنشورة</span>
+              </div>
+              <div class="quick-stat-value" id="sidebarTotalNews">0</div>
+            </div>
+            
+            <div class="quick-stat-item">
+              <div class="quick-stat-label">
+                <i class="fas fa-image" style="background-color: #4cc9f0;"></i>
+                <span>أخبار بالصور</span>
+              </div>
+              <div class="quick-stat-value" id="sidebarWithImages">0</div>
+            </div>
+            
+            <div class="quick-stat-item">
+              <div class="quick-stat-label">
+                <i class="fas fa-font" style="background-color: #7209b7;"></i>
+                <span>متوسط الكلمات</span>
+              </div>
+              <div class="quick-stat-value" id="avgWords">0</div>
+            </div>
+            
+            <div class="quick-stat-item">
+              <div class="quick-stat-label">
+                <i class="fas fa-clock" style="background-color: #ff9e00;"></i>
+                <span>آخر تحديث</span>
+              </div>
+              <div class="quick-stat-value" id="lastUpdate">-</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="sidebar-card">
+          <div class="sidebar-title">
+            <i class="fas fa-history"></i>
+            <h3>النشاط الأخير</h3>
+          </div>
+          
+          <div class="recent-activity" id="recentActivity">
+            <div class="activity-item">
+              <div class="activity-icon" style="background-color: #4cc9f0;">
+                <i class="fas fa-sign-in-alt"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-text">تم تسجيل الدخول بنجاح</div>
+                <div class="activity-time">منذ قليل</div>
+              </div>
+            </div>
+            
+            <div class="activity-item">
+              <div class="activity-icon" style="background-color: #4361ee;">
+                <i class="fas fa-info-circle"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-text">مرحباً بك في لوحة التحكم</div>
+                <div class="activity-time">بداية الجلسة</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="margin-top:0;">إضافة خبر</h3>
-
-    <textarea id="text" placeholder="النص (إجباري)"></textarea>
-    <input id="source" placeholder="المصدر (اختياري)" />
-
-    <div class="meta">الصورة (اختياري):</div>
-    <input id="imageFile" type="file" accept="image/*" />
-
-    <button id="add">نشر</button>
-    <div id="err" class="err"></div>
-    <div class="meta" id="hint"></div>
-  </div>
-
-  <div class="card">
-    <h3 style="margin-top:0;">آخر الأخبار</h3>
-    <div id="list"></div>
-  </div>
-
   <script>
-    const token = localStorage.getItem('token');
-    if (!token) location.href = '/login.html';
-
-    const err = document.getElementById('err');
-    const hint = document.getElementById('hint');
-    const list = document.getElementById('list');
-
-    function escapeHtml(s){
-      return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-    }
-
-    async function refresh() {
-      const r = await fetch('/api/news');
-      const j = await r.json();
-      if (!j.ok) return;
-
-      list.innerHTML = j.news.map(n => {
-        const dt = new Date(n.createdAt);
-        const img = n.imageUrl ? `<img src="${escapeHtml(n.imageUrl)}" alt="image" />` : '';
-        const src = n.source ? ` | المصدر: ${escapeHtml(n.source)}` : '';
-
-        return `
-          <div style="border-top:1px solid #eee; padding:12px 0;">
-            <div>${escapeHtml(n.text)}</div>
-            ${img}
-            <div class="meta">${dt.toLocaleString('ar-EG')}${src}</div>
-            <div class="btnRow">
-              <button class="btnSmall" onclick="delNews('${n.id}')">حذف</button>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user') || 'الأدمن';
+      
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // Set user info
+      document.getElementById('userName').textContent = user;
+      document.getElementById('userAvatar').textContent = user.charAt(0);
+      
+      // DOM Elements
+      const logoutBtn = document.getElementById('logoutBtn');
+      const addNewsForm = document.getElementById('addNewsForm');
+      const newsText = document.getElementById('newsText');
+      const newsSource = document.getElementById('newsSource');
+      const newsImage = document.getElementById('newsImage');
+      const fileLabel = document.getElementById('fileLabel');
+      const fileName = document.getElementById('fileName');
+      const publishBtn = document.getElementById('publishBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const successMessage = document.getElementById('successMessage');
+      const errorMessage = document.getElementById('errorMessage');
+      const errorText = document.getElementById('errorText');
+      const refreshNewsBtn = document.getElementById('refreshNewsBtn');
+      const newsList = document.getElementById('newsList');
+      
+      // Stats elements
+      const totalNews = document.getElementById('totalNews');
+      const todayNews = document.getElementById('todayNews');
+      const withImages = document.getElementById('withImages');
+      const lastActivity = document.getElementById('lastActivity');
+      const sidebarTotalNews = document.getElementById('sidebarTotalNews');
+      const sidebarWithImages = document.getElementById('sidebarWithImages');
+      const avgWords = document.getElementById('avgWords');
+      const lastUpdate = document.getElementById('lastUpdate');
+      const recentActivity = document.getElementById('recentActivity');
+      
+      // File upload handling
+      newsImage.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          const file = this.files[0];
+          fileName.textContent = file.name;
+          fileLabel.classList.add('has-file');
+          
+          // Check file size
+          if (file.size > 2 * 1024 * 1024) {
+            errorText.textContent = 'حجم الصورة كبير جداً. الحد الأقصى 2MB.';
+            errorMessage.classList.add('show');
+            this.value = '';
+            fileName.textContent = '';
+            fileLabel.classList.remove('has-file');
+          }
+        } else {
+          fileName.textContent = '';
+          fileLabel.classList.remove('has-file');
+        }
+      });
+      
+      // Logout handler
+      logoutBtn.addEventListener('click', function() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      });
+      
+      // Function to escape HTML
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      
+      // Function to format date
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) {
+          return 'الآن';
+        } else if (diffMins < 60) {
+          return `منذ ${diffMins} دقيقة`;
+        } else if (diffHours < 24) {
+          return `منذ ${diffHours} ساعة`;
+        } else if (diffDays === 1) {
+          return 'أمس';
+        } else if (diffDays < 7) {
+          return `منذ ${diffDays} أيام`;
+        } else {
+          return date.toLocaleDateString('ar-EG', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+        }
+      }
+      
+      // Function to format full date
+      function formatFullDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('ar-EG', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+      
+      // Load news function
+      async function loadNews() {
+        try {
+          // Show loading state
+          newsList.innerHTML = `
+            <div class="loading">
+              <div class="spinner"></div>
             </div>
+          `;
+          
+          const response = await fetch('/api/news', {
+            headers: {
+              'Authorization': 'Bearer ' + token
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (!data.ok || !data.news || data.news.length === 0) {
+            newsList.innerHTML = `
+              <div class="empty-news">
+                <div class="empty-icon">
+                  <i class="far fa-newspaper"></i>
+                </div>
+                <h3>لا توجد أخبار منشورة</h3>
+                <p>ابدأ بإضافة خبر جديد باستخدام النموذج أعلاه.</p>
+              </div>
+            `;
+            
+            // Update stats
+            updateStats([]);
+            return;
+          }
+          
+          // Render news
+          newsList.innerHTML = data.news.map(news => `
+            <div class="news-item" id="news-${news.id}">
+              <div class="news-item-content">
+                <div class="news-item-text">
+                  ${escapeHtml(news.text)}
+                </div>
+                
+                ${news.imageUrl ? 
+                  `<img src="${escapeHtml(news.imageUrl)}" alt="صورة الخبر" class="news-item-image">` : 
+                  ''
+                }
+              </div>
+              
+              <div class="news-item-meta">
+                <div class="news-item-date">
+                  <i class="far fa-clock"></i>
+                  <span>${formatFullDate(news.createdAt)}</span>
+                </div>
+                
+                ${news.source ? 
+                  `<div class="news-item-source">${escapeHtml(news.source)}</div>` : 
+                  `<div class="news-item-source">موقع الأخبار</div>`
+                }
+              </div>
+              
+              <div class="news-item-actions">
+                <button class="btn-sm btn-danger" onclick="deleteNews('${news.id}')">
+                  <i class="fas fa-trash-alt"></i>
+                  <span>حذف الخبر</span>
+                </button>
+              </div>
+            </div>
+          `).join('');
+          
+          // Update stats
+          updateStats(data.news);
+          
+          // Update last update time
+          const now = new Date();
+          lastUpdate.textContent = now.toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+        } catch (error) {
+          console.error('Error loading news:', error);
+          newsList.innerHTML = `
+            <div class="empty-news">
+              <div class="empty-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <h3>حدث خطأ في تحميل الأخبار</h3>
+              <p>تعذر تحميل قائمة الأخبار. يرجى المحاولة مرة أخرى.</p>
+            </div>
+          `;
+        }
+      }
+      
+      // Update stats function
+      function updateStats(newsArray) {
+        const today = new Date().toDateString();
+        const todayCount = newsArray.filter(news => {
+          const newsDate = new Date(news.createdAt).toDateString();
+          return newsDate === today;
+        }).length;
+        
+        const withImagesCount = newsArray.filter(news => news.imageUrl).length;
+        
+        // Calculate average words
+        let totalWords = 0;
+        newsArray.forEach(news => {
+          totalWords += news.text.split(/\s+/).length;
+        });
+        const avgWordsCount = newsArray.length > 0 ? Math.round(totalWords / newsArray.length) : 0;
+        
+        // Update stats
+        totalNews.textContent = newsArray.length;
+        todayNews.textContent = todayCount;
+        withImages.textContent = withImagesCount;
+        lastActivity.textContent = newsArray.length > 0 ? formatDate(newsArray[0].createdAt) : '-';
+        
+        // Update sidebar stats
+        sidebarTotalNews.textContent = newsArray.length;
+        sidebarWithImages.textContent = withImagesCount;
+        avgWords.textContent = avgWordsCount;
+      }
+      
+      // Add news form submission
+      addNewsForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Hide messages
+        successMessage.classList.remove('show');
+        errorMessage.classList.remove('show');
+        
+        // Validate form
+        const text = newsText.value.trim();
+        if (!text) {
+          errorText.textContent = 'النص مطلوب لإضافة خبر جديد';
+          errorMessage.classList.add('show');
+          newsText.focus();
+          return;
+        }
+        
+        // Disable publish button and show loading
+        const originalBtnText = publishBtn.innerHTML;
+        publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>جاري النشر...</span>';
+        publishBtn.disabled = true;
+        
+        try {
+          let imageUrl = '';
+          
+          // Upload image if selected
+          if (newsImage.files && newsImage.files[0]) {
+            const file = newsImage.files[0];
+            
+            // Check file size
+            if (file.size > 2 * 1024 * 1024) {
+              throw new Error('حجم الصورة كبير جداً. الحد الأقصى 2MB.');
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const uploadResponse = await fetch('/api/upload', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + token
+              },
+              body: formData
+            });
+            
+            const uploadData = await uploadResponse.json();
+            
+            if (!uploadData.ok) {
+              throw new Error(uploadData.error || 'فشل رفع الصورة');
+            }
+            
+            imageUrl = uploadData.url;
+          }
+          
+          // Create news item
+          const newsData = {
+            text,
+            source: newsSource.value.trim(),
+            imageUrl
+          };
+          
+          const response = await fetch('/api/news', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(newsData)
+          });
+          
+          const data = await response.json();
+          
+          if (data.ok) {
+            // Show success message
+            successMessage.classList.add('show');
+            
+            // Reset form
+            addNewsForm.reset();
+            fileName.textContent = '';
+            fileLabel.classList.remove('has-file');
+            
+            // Add to activity
+            addActivity('تم إضافة خبر جديد', 'fas fa-plus', '#4cc9f0');
+            
+            // Reload news list
+            loadNews();
+            
+            // Scroll to news list
+            document.querySelector('.news-list-card').scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          } else {
+            throw new Error(data.error || 'فشل نشر الخبر');
+          }
+          
+        } catch (error) {
+          errorText.textContent = error.message;
+          errorMessage.classList.add('show');
+          
+          // Scroll to error message
+          errorMessage.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        } finally {
+          // Restore publish button
+          publishBtn.innerHTML = originalBtnText;
+          publishBtn.disabled = false;
+        }
+      });
+      
+      // Reset form handler
+      resetBtn.addEventListener('click', function() {
+        successMessage.classList.remove('show');
+        errorMessage.classList.remove('show');
+        fileName.textContent = '';
+        fileLabel.classList.remove('has-file');
+      });
+      
+      // Refresh news button
+      refreshNewsBtn.addEventListener('click', function() {
+        loadNews();
+        
+        // Add to activity
+        addActivity('تم تحديث قائمة الأخبار', 'fas fa-sync-alt', '#4361ee');
+      });
+      
+      // Function to add activity
+      function addActivity(text, icon, color) {
+        const activityItem = document.createElement('div');
+        activityItem.className = 'activity-item';
+        activityItem.innerHTML = `
+          <div class="activity-icon" style="background-color: ${color};">
+            <i class="${icon}"></i>
+          </div>
+          <div class="activity-content">
+            <div class="activity-text">${text}</div>
+            <div class="activity-time">الآن</div>
           </div>
         `;
-      }).join('');
-    }
-
-    async function uploadImageIfAny() {
-      const fileInput = document.getElementById('imageFile');
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) return "";
-
-      // نصيحة لو المشكلة حجم
-      if (file.size > 2 * 1024 * 1024) {
-        throw new Error('الصورة كبيرة. جرّب صورة أصغر (يفضل أقل من 2MB).');
+        
+        recentActivity.insertBefore(activityItem, recentActivity.firstChild);
+        
+        // Limit to 5 activities
+        if (recentActivity.children.length > 5) {
+          recentActivity.removeChild(recentActivity.lastChild);
+        }
       }
-
-      const form = new FormData();
-      form.append("image", file); // لازم اسم field يكون image
-
-      const r = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-        body: form
-      });
-
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error || 'فشل رفع الصورة');
-      return j.url;
-    }
-
-    document.getElementById('add').onclick = async () => {
-      err.textContent = '';
-      hint.textContent = '';
+      
+      // Load initial data
+      loadNews();
+    });
+    
+    // Delete news function (global for onclick attribute)
+    async function deleteNews(id) {
+      const token = localStorage.getItem('token');
+      
+      if (!confirm('هل أنت متأكد من حذف هذا الخبر؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        return;
+      }
+      
       try {
-        const text = document.getElementById('text').value.trim();
-        const source = document.getElementById('source').value.trim();
-        if (!text) { err.textContent = 'النص إجباري'; return; }
-
-        hint.textContent = 'جاري النشر...';
-
-        let imageUrl = "";
-        imageUrl = await uploadImageIfAny(); // اختياري
-
-        const r = await fetch('/api/news', {
-          method: 'POST',
+        const response = await fetch('/api/news/' + encodeURIComponent(id), {
+          method: 'DELETE',
           headers: {
-            'Content-Type':'application/json',
             'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({ text, source, imageUrl })
+          }
         });
-
-        const j = await r.json();
-        if (!j.ok) { err.textContent = j.error || 'فشل النشر'; hint.textContent=''; return; }
-
-        document.getElementById('text').value = '';
-        document.getElementById('source').value = '';
-        document.getElementById('imageFile').value = '';
-        hint.textContent = 'تم النشر ✅';
-        refresh();
-      } catch (e) {
-        hint.textContent = '';
-        err.textContent = e.message || 'حصل خطأ';
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+          // Remove news item from DOM
+          const newsItem = document.getElementById('news-' + id);
+          if (newsItem) {
+            newsItem.style.opacity = '0.5';
+            newsItem.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+              newsItem.remove();
+              
+              // Reload news to update stats
+              document.dispatchEvent(new Event('DOMContentLoaded'));
+            }, 300);
+          }
+          
+          // Show success message
+          const successMessage = document.getElementById('successMessage');
+          successMessage.querySelector('span').textContent = 'تم حذف الخبر بنجاح';
+          successMessage.classList.add('show');
+          
+          setTimeout(() => {
+            successMessage.classList.remove('show');
+          }, 3000);
+          
+        } else {
+          alert(data.error || 'فشل حذف الخبر');
+        }
+      } catch (error) {
+        console.error('Error deleting news:', error);
+        alert('حدث خطأ أثناء حذف الخبر');
       }
-    };
-
-    window.delNews = async (id) => {
-      err.textContent = '';
-      hint.textContent = '';
-      if (!confirm('متأكد إنك عايز تحذف الخبر؟')) return;
-
-      const r = await fetch('/api/news/' + encodeURIComponent(id), {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-
-      const j = await r.json();
-      if (!j.ok) { err.textContent = j.error || 'فشل الحذف'; return; }
-
-      hint.textContent = 'تم الحذف ✅';
-      refresh();
-    };
-
-    document.getElementById('logout').onclick = () => {
-      localStorage.removeItem('token');
-      location.href = '/';
-    };
-
-    refresh();
+    }
   </script>
 </body>
 </html>
