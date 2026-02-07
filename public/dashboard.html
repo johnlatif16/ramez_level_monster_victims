@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>لوحة الأدمن</title>
   <style>
-    body { font-family: system-ui, Arial; margin: 24px; max-width: 760px; }
+    body { font-family: system-ui, Arial; margin: 24px; max-width: 820px; }
     .row { display:flex; gap:10px; align-items:center; justify-content:space-between; }
     .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin-top: 12px; }
     input, textarea, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 10px; border:1px solid #ccc; }
@@ -14,7 +14,8 @@
     .meta { opacity:.7; font-size: 13px; margin-top: 6px; }
     .err { color:#b00020; margin-top: 10px; }
     img { max-width: 100%; border-radius: 10px; margin-top: 8px; }
-    .small { width: auto; }
+    .btnRow { display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .btnSmall { width:auto; padding:8px 12px; }
   </style>
 </head>
 <body>
@@ -22,7 +23,7 @@
     <h2 style="margin:0;">لوحة الأدمن</h2>
     <div style="display:flex; gap:10px; align-items:center;">
       <a href="/">الرئيسية</a>
-      <button id="logout" class="small">خروج</button>
+      <button id="logout" class="btnSmall">خروج</button>
     </div>
   </div>
 
@@ -37,7 +38,7 @@
 
     <button id="add">نشر</button>
     <div id="err" class="err"></div>
-    <div class="meta">ملاحظة: رفع الصور بيتم على Vercel Blob ويطلع لك رابط عام.</div>
+    <div class="meta" id="hint"></div>
   </div>
 
   <div class="card">
@@ -50,6 +51,7 @@
     if (!token) location.href = '/login.html';
 
     const err = document.getElementById('err');
+    const hint = document.getElementById('hint');
     const list = document.getElementById('list');
 
     function escapeHtml(s){
@@ -65,11 +67,17 @@
         const dt = new Date(n.createdAt);
         const img = n.imageUrl ? `<img src="${escapeHtml(n.imageUrl)}" alt="image" />` : '';
         const src = n.source ? ` | المصدر: ${escapeHtml(n.source)}` : '';
-        return `<div style="border-top:1px solid #eee; padding:10px 0;">
-          <div>${escapeHtml(n.text)}</div>
-          ${img}
-          <div class="meta">${dt.toLocaleString('ar-EG')}${src}</div>
-        </div>`;
+
+        return `
+          <div style="border-top:1px solid #eee; padding:12px 0;">
+            <div>${escapeHtml(n.text)}</div>
+            ${img}
+            <div class="meta">${dt.toLocaleString('ar-EG')}${src}</div>
+            <div class="btnRow">
+              <button class="btnSmall" onclick="delNews('${n.id}')">حذف</button>
+            </div>
+          </div>
+        `;
       }).join('');
     }
 
@@ -78,8 +86,13 @@
       const file = fileInput.files && fileInput.files[0];
       if (!file) return "";
 
+      // نصيحة لو المشكلة حجم
+      if (file.size > 2 * 1024 * 1024) {
+        throw new Error('الصورة كبيرة. جرّب صورة أصغر (يفضل أقل من 2MB).');
+      }
+
       const form = new FormData();
-      form.append("image", file);
+      form.append("image", file); // لازم اسم field يكون image
 
       const r = await fetch('/api/upload', {
         method: 'POST',
@@ -94,10 +107,13 @@
 
     document.getElementById('add').onclick = async () => {
       err.textContent = '';
+      hint.textContent = '';
       try {
         const text = document.getElementById('text').value.trim();
         const source = document.getElementById('source').value.trim();
         if (!text) { err.textContent = 'النص إجباري'; return; }
+
+        hint.textContent = 'جاري النشر...';
 
         let imageUrl = "";
         imageUrl = await uploadImageIfAny(); // اختياري
@@ -112,15 +128,34 @@
         });
 
         const j = await r.json();
-        if (!j.ok) { err.textContent = j.error || 'فشل النشر'; return; }
+        if (!j.ok) { err.textContent = j.error || 'فشل النشر'; hint.textContent=''; return; }
 
         document.getElementById('text').value = '';
         document.getElementById('source').value = '';
         document.getElementById('imageFile').value = '';
+        hint.textContent = 'تم النشر ✅';
         refresh();
       } catch (e) {
+        hint.textContent = '';
         err.textContent = e.message || 'حصل خطأ';
       }
+    };
+
+    window.delNews = async (id) => {
+      err.textContent = '';
+      hint.textContent = '';
+      if (!confirm('متأكد إنك عايز تحذف الخبر؟')) return;
+
+      const r = await fetch('/api/news/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      const j = await r.json();
+      if (!j.ok) { err.textContent = j.error || 'فشل الحذف'; return; }
+
+      hint.textContent = 'تم الحذف ✅';
+      refresh();
     };
 
     document.getElementById('logout').onclick = () => {
