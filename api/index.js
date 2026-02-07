@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import jwt from "jsonwebtoken";
 import { URL } from "node:url";
+import Busboy from "busboy";
+import { put } from "@vercel/blob";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 const ADMIN_USER = process.env.ADMIN_USER || "admin";
@@ -9,7 +11,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "password";
 
 const DATA_PATH = path.join(process.cwd(), "data.json");
 
-// ذاكرة مؤقتة (غير مضمونة على Vercel)
+// Cache in memory (مش مضمون على Vercel)
 let runtimeNewsCache = null;
 
 function readNewsFromFile() {
@@ -25,16 +27,19 @@ function readNewsFromFile() {
 function getAllNews() {
   const fileNews = readNewsFromFile();
   const cacheNews = Array.isArray(runtimeNewsCache) ? runtimeNewsCache : [];
-  // دمج بدون تكرار id (الكاش يغلب)
+
   const seen = new Set();
   const merged = [];
+
   for (const n of [...cacheNews, ...fileNews]) {
     if (!n?.id || seen.has(n.id)) continue;
     seen.add(n.id);
     merged.push(n);
   }
-  // ترتيب الأحدث أولاً
-  merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  merged.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
   return merged;
 }
 
@@ -87,6 +92,11 @@ function makeId() {
   return "n_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
+function safeFilename(name) {
+  const base = String(name || "image").replace(/[^a-zA-Z0-9._-]/g, "_");
+  return base.slice(0, 120);
+}
+
 export default async function handler(req, res) {
   cors(res);
 
@@ -124,8 +134,66 @@ export default async function handler(req, res) {
       return unauthorized(res, "Invalid credentials");
     }
 
-    const token = jwt.sign({ sub: username, role: "admin" }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ sub: username, role: "admin" }, JWT_SECRET, {
+      expiresIn: "7d"
+    });
+
     return json(res, 200, { ok: true, token });
+  }
+
+  // ===== Admin: upload image file to Vercel Blob =====
+  if (pathname === "/api/upload" && req.method === "POST") {
+    const v = verifyJWT(req);
+    if (!v.ok) return unauthorized(res);
+
+    const bb = Busboy({ headers: req.headers });
+    let uploadPromise = null;
+
+    bb.on("file", (fieldname, file, info) => {
+      const { filename, mimeType } = info || {};
+      const chunks = [];
+
+      file.on("data", (d) => chunks.push(d));
+
+      uploadPromise = new Promise((resolve, reject) => {
+        file.on("end", async () => {
+          try {
+            const buffer = Buffer.concat(chunks);
+            if (!buffer.length) return reject(new Error("Empty file"));
+
+            // اسم داخل blob
+            const key = `uploads/${Date.now()}-${safeFilename(filename)}`;
+
+            const blob = await put(key, buffer, {
+              access: "public",
+              addRandomSuffix: true,
+              contentType: mimeType || undefined
+            });
+
+            resolve(blob);
+          } catch (e) {
+            reject(e);
+          }
+        });
+
+        file.on("error", reject);
+      });
+    });
+
+    bb.on("error", () => badRequest(res, "Upload parse error"));
+
+    bb.on("finish", async () => {
+      try {
+        if (!uploadPromise) return badRequest(res, "No file provided (field: image)");
+        const blob = await uploadPromise;
+        return json(res, 200, { ok: true, url: blob.url });
+      } catch {
+        return json(res, 500, { ok: false, error: "Upload failed" });
+      }
+    });
+
+    req.pipe(bb);
+    return;
   }
 
   // ===== Public: list news =====
@@ -170,8 +238,7 @@ export default async function handler(req, res) {
     if (!Array.isArray(runtimeNewsCache)) runtimeNewsCache = [];
     runtimeNewsCache.unshift(item);
 
-    // محاولة كتابة للملف (هتفشل على Vercel غالباً لأنه Read-only)
-    // فبنسكت عن الخطأ.
+    // محاولة كتابة data.json (قد تفشل على Vercel)
     try {
       const fileNews = readNewsFromFile();
       const next = { news: [item, ...fileNews] };
