@@ -1,68 +1,55 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>الأخبار</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>موقع أخبار</title>
   <style>
-    body{font-family:system-ui,Arial;margin:0;background:#0b0b10;color:#fff}
-    header{position:sticky;top:0;background:#121226;border-bottom:1px solid #2a2a45}
-    .wrap{max-width:900px;margin:0 auto;padding:16px}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    a{color:#9bd1ff;text-decoration:none}
-    .btn{background:#1f1f3a;border:1px solid #2a2a45;color:#fff;padding:8px 12px;border-radius:12px;cursor:pointer}
-    .btn:hover{filter:brightness(1.08)}
-    .grid{display:grid;gap:12px;margin-top:12px}
-    .card{background:#141428;border:1px solid #2a2a45;border-radius:14px;padding:14px}
-    .meta{opacity:.75;font-size:12px;margin-top:6px}
-    img{width:100%;border-radius:12px;margin-top:10px}
+    body { font-family: system-ui, Arial; margin: 24px; }
+    header { display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:14px; margin:12px 0; }
+    .meta { opacity:.7; font-size: 13px; margin-top: 8px; }
+    img { max-width: 100%; border-radius: 10px; margin-top: 10px; }
+    a { color: inherit; }
   </style>
 </head>
 <body>
-<header>
-  <div class="wrap topbar">
-    <strong>الأخبار</strong>
-  </div>
-</header>
-
-<div class="wrap">
-  <div id="list" class="grid"></div>
-</div>
-
-<script>
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[c]));
-}
-
-async function load(){
-  const res = await fetch("/api/posts", { cache:"no-store" });
-  const text = await res.text();
-  let data = {};
-  try { data = JSON.parse(text); } catch { data = { posts: [] }; }
-
-  const list = document.getElementById("list");
-  const posts = data.posts || [];
-
-  if (!posts.length){
-    list.innerHTML = `<div class="card">لا يوجد أخبار بعد.</div>`;
-    return;
-  }
-
-  list.innerHTML = posts.map(p => `
-    <div class="card">
-      <div style="font-size:18px"><strong>${escapeHtml(p.title)}</strong></div>
-      <div class="meta">${new Date(p.createdAt).toLocaleString('ar-EG')}</div>
-      ${p.imageUrl ? `<img src="${p.imageUrl}" alt="">` : ``}
-      ${p.body ? `<div style="margin-top:10px;opacity:.92;line-height:1.8">${escapeHtml(p.body).replace(/\n/g,"<br>")}</div>` : ``}
-      ${p.sourceUrl ? `<div class="meta" style="margin-top:10px">المصدر: <a target="_blank" href="${p.sourceUrl}">${escapeHtml(p.sourceUrl)}</a></div>` : ``}
+  <header>
+    <div>
+      <h2 style="margin:0;">آخر الأخبار</h2>
     </div>
-  `).join("");
-}
+  </header>
 
-load();
-setInterval(load, 30000);
-</script>
+  <div id="list"></div>
+
+  <script>
+    const list = document.getElementById('list');
+
+    function escapeHtml(s){
+      return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    }
+
+    async function load() {
+      const r = await fetch('/api/news');
+      const j = await r.json();
+      if (!j.ok) return;
+
+      list.innerHTML = j.news.map(n => {
+        const img = n.imageUrl ? `<img src="${escapeHtml(n.imageUrl)}" alt="image">` : '';
+        const src = n.source ? ` | المصدر: ${escapeHtml(n.source)}` : '';
+        const dt = new Date(n.createdAt);
+        return `
+          <div class="card">
+            <div>${escapeHtml(n.text)}</div>
+            ${img}
+            <div class="meta">${dt.toLocaleString('ar-EG')}${src}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    load();
+    setInterval(load, 15000);
+  </script>
 </body>
 </html>
