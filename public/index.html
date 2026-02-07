@@ -170,11 +170,41 @@
       box-shadow: var(--shadow-lg);
     }
 
-    .news-image {
+    .news-image-container {
+      position: relative;
       width: 100%;
       height: 200px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .news-image {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       display: block;
+      transition: transform 0.5s ease;
+    }
+
+    .news-image:hover {
+      transform: scale(1.05);
+    }
+
+    .image-overlay {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      left: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+      color: white;
+      padding: 10px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .news-image-container:hover .image-overlay {
+      opacity: 1;
     }
 
     .no-image {
@@ -250,6 +280,79 @@
       margin: 0 auto;
     }
 
+    /* Full Screen Image Modal */
+    .image-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .image-modal.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-content {
+      position: relative;
+      max-width: 90%;
+      max-height: 90%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-image {
+      max-width: 100%;
+      max-height: 90vh;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .close-modal {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      z-index: 1001;
+    }
+
+    .close-modal:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    .image-caption {
+      position: fixed;
+      bottom: 20px;
+      right: 0;
+      left: 0;
+      text-align: center;
+      color: white;
+      font-size: 16px;
+      padding: 0 20px;
+      z-index: 1001;
+    }
+
     /* Footer */
     .main-footer {
       background-color: var(--dark);
@@ -303,12 +406,6 @@
       100% { opacity: 1; }
     }
 
-    /* Smooth update animation */
-    .news-updating {
-      opacity: 0.7;
-      transition: opacity 0.3s ease;
-    }
-
     /* Loading Animation - للتحميل الأولي فقط */
     .loading {
       display: flex;
@@ -354,6 +451,14 @@
         flex-direction: column;
         text-align: center;
       }
+      
+      .close-modal {
+        top: 10px;
+        left: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+      }
     }
 
     @media (max-width: 576px) {
@@ -380,6 +485,10 @@
       .main-content {
         padding: 30px 0;
       }
+      
+      .image-modal .modal-content {
+        max-width: 95%;
+      }
     }
   </style>
 </head>
@@ -400,12 +509,6 @@
               <span id="updateStatus">يتم التحديث التلقائي كل 5 ثوانٍ</span>
             </div>
           </div>
-        </div>
-        <a href="/admin" class="admin-link">
-          <i class="fas fa-user-cog"></i>
-          لوحة التحكم
-        </a>
-      </div>
     </div>
   </header>
 
@@ -421,6 +524,19 @@
       </div>
     </div>
   </main>
+
+  <!-- Full Screen Image Modal -->
+  <div class="image-modal" id="imageModal">
+    <button class="close-modal" id="closeModal" aria-label="إغلاق">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="modal-content">
+      <img class="modal-image" id="modalImage" src="" alt="صورة الخبر بالحجم الكامل">
+    </div>
+    <div class="image-caption" id="imageCaption">
+      <!-- سيتم ملء التسمية التوضيحية من JavaScript -->
+    </div>
+  </div>
 
   <!-- Footer -->
   <footer class="main-footer">
@@ -441,8 +557,12 @@
     document.addEventListener('DOMContentLoaded', function() {
       const newsContainer = document.getElementById('newsContainer');
       const updateStatus = document.getElementById('updateStatus');
+      const imageModal = document.getElementById('imageModal');
+      const modalImage = document.getElementById('modalImage');
+      const imageCaption = document.getElementById('imageCaption');
+      const closeModal = document.getElementById('closeModal');
       let isFirstLoad = true;
-      let currentNewsData = []; // لتخزين البيانات الحالية للمقارنة
+      let currentNewsData = [];
       
       // Function to update last update time
       function updateLastUpdateTime() {
@@ -476,12 +596,58 @@
         });
       }
       
+      // Function to open image in full screen
+      function openFullScreenImage(imageUrl, newsText) {
+        modalImage.src = imageUrl;
+        // استخراج أول 100 حرف من نص الخبر كتسمية توضيحية
+        const caption = newsText.length > 100 ? newsText.substring(0, 100) + '...' : newsText;
+        imageCaption.textContent = caption;
+        imageModal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // منع التمرير عند فتح الصورة
+      }
+      
+      // Function to close full screen image
+      function closeFullScreenImage() {
+        imageModal.classList.remove('active');
+        document.body.style.overflow = ''; // إعادة التمرير
+      }
+      
+      // إضافة مستمعي الأحداث للنافذة المنبثقة
+      closeModal.addEventListener('click', closeFullScreenImage);
+      
+      // إغلاق النافذة المنبثقة عند الضغط على زر ESC
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && imageModal.classList.contains('active')) {
+          closeFullScreenImage();
+        }
+      });
+      
+      // إغلاق النافذة المنبثقة عند النقر خارج الصورة
+      imageModal.addEventListener('click', function(event) {
+        if (event.target === imageModal) {
+          closeFullScreenImage();
+        }
+      });
+      
       // Function to create news card HTML
-      function createNewsCardHTML(news) {
+      function createNewsCardHTML(news, index) {
+        const hasImage = news.imageUrl && news.imageUrl.trim() !== '';
+        const newsTextPreview = news.text.length > 150 ? 
+          news.text.substring(0, 150) + '...' : news.text;
+        
         return `
           <article class="news-card">
-            ${news.imageUrl ? 
-              `<img src="${escapeHtml(news.imageUrl)}" alt="صورة الخبر" class="news-image">` : 
+            ${hasImage ? 
+              `<div class="news-image-container" data-index="${index}">
+                <img src="${escapeHtml(news.imageUrl)}" 
+                     alt="صورة الخبر" 
+                     class="news-image"
+                     data-image-url="${escapeHtml(news.imageUrl)}"
+                     data-news-text="${escapeHtml(news.text)}">
+                <div class="image-overlay">
+                  <i class="fas fa-expand"></i> اضغط للتكبير
+                </div>
+              </div>` : 
               `<div class="no-image">
                 <i class="far fa-newspaper"></i>
               </div>`
@@ -489,7 +655,7 @@
             
             <div class="news-content">
               <div class="news-text">
-                ${escapeHtml(news.text)}
+                ${escapeHtml(newsTextPreview)}
               </div>
               
               <div class="news-meta">
@@ -554,6 +720,29 @@
         `;
       }
       
+      // Function to add click event listeners to news images
+      function addImageClickListeners() {
+        const imageContainers = document.querySelectorAll('.news-image-container');
+        imageContainers.forEach(container => {
+          const img = container.querySelector('.news-image');
+          if (img) {
+            container.addEventListener('click', function() {
+              const imageUrl = img.getAttribute('data-image-url');
+              const newsText = img.getAttribute('data-news-text');
+              openFullScreenImage(imageUrl, newsText);
+            });
+            
+            // أيضًا السماح بالضغط على الصورة مباشرة
+            img.addEventListener('click', function(event) {
+              event.stopPropagation();
+              const imageUrl = img.getAttribute('data-image-url');
+              const newsText = img.getAttribute('data-news-text');
+              openFullScreenImage(imageUrl, newsText);
+            });
+          }
+        });
+      }
+      
       // Load news function - بدون إظهار loading في التحديثات التلقائية
       async function loadNews() {
         try {
@@ -602,10 +791,13 @@
           currentNewsData = data.news;
           
           // إنشاء HTML جديد
-          const newHTML = data.news.map(news => createNewsCardHTML(news)).join('');
+          const newHTML = data.news.map((news, index) => createNewsCardHTML(news, index)).join('');
           
           // تحديث الـ DOM
           newsContainer.innerHTML = newHTML;
+          
+          // إضافة مستمعي الأحداث للصور
+          addImageClickListeners();
           
           // إعادة الشفافية الطبيعية
           newsContainer.style.opacity = '1';
