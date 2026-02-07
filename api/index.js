@@ -1,172 +1,185 @@
-import express from "express";
-import cors from "cors";
-import path from "path";
-import fs from "fs";
-import bcrypt from "bcryptjs";
+import fs from "node:fs";
+import path from "node:path";
 import jwt from "jsonwebtoken";
-import multer from "multer";
-import { nanoid } from "nanoid";
-import { fileURLToPath } from "url";
+import { URL } from "node:url";
 
-// --- paths ---
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PUBLIC_DIR = path.join(__dirname, "..", "public");
-
-// --- app ---
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: "2mb" }));
-
-// Serve static public files
-app.use(express.static(PUBLIC_DIR));
-
-// Vercel writable temp storage
-const TMP_ROOT = "/tmp/news_site";
-const UPLOADS_DIR = path.join(TMP_ROOT, "uploads");
-const DATA_PATH = path.join(TMP_ROOT, "data.json");
-
-// Serve uploaded images (temporary)
-app.use("/uploads", express.static(UPLOADS_DIR));
-
-// --- ENV ---
-const JWT_SECRET = process.env.JWT_SECRET || "CHANGE_ME";
+const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 const ADMIN_USER = process.env.ADMIN_USER || "admin";
-const ADMIN_PASS_HASH = process.env.ADMIN_PASS_HASH || ""; // bcrypt hash required
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "password";
 
-// --- ensure storage ---
-function ensureStore() {
-  if (!fs.existsSync(TMP_ROOT)) fs.mkdirSync(TMP_ROOT, { recursive: true });
-  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  if (!fs.existsSync(DATA_PATH)) {
-    fs.writeFileSync(DATA_PATH, JSON.stringify({ posts: [] }, null, 2), "utf8");
-  }
-}
+const DATA_PATH = path.join(process.cwd(), "data.json");
 
-function readDB() {
-  ensureStore();
-  return JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
-}
+// ذاكرة مؤقتة (غير مضمونة على Vercel)
+let runtimeNewsCache = null;
 
-function writeDB(db) {
-  ensureStore();
-  fs.writeFileSync(DATA_PATH, JSON.stringify(db, null, 2), "utf8");
-}
-
-// --- auth ---
-function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
-}
-
-function authRequired(req, res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ error: "Missing token" });
-
+function readNewsFromFile() {
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    return next();
+    const raw = fs.readFileSync(DATA_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed.news) ? parsed.news : [];
   } catch {
-    return res.status(401).json({ error: "Invalid/expired token" });
+    return [];
   }
 }
 
-// --- uploads ---
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    ensureStore();
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    cb(null, `${Date.now()}_${nanoid(10)}${ext || ".jpg"}`);
+function getAllNews() {
+  const fileNews = readNewsFromFile();
+  const cacheNews = Array.isArray(runtimeNewsCache) ? runtimeNewsCache : [];
+  // دمج بدون تكرار id (الكاش يغلب)
+  const seen = new Set();
+  const merged = [];
+  for (const n of [...cacheNews, ...fileNews]) {
+    if (!n?.id || seen.has(n.id)) continue;
+    seen.add(n.id);
+    merged.push(n);
   }
-});
-
-function fileFilter(req, file, cb) {
-  const ok = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype);
-  cb(ok ? null : new Error("Only images allowed"), ok);
+  // ترتيب الأحدث أولاً
+  merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return merged;
 }
 
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 6 * 1024 * 1024 } // 6MB
-});
+function json(res, status, obj) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(obj));
+}
 
-// --- API ---
-app.get("/api/health", (req, res) => res.json({ ok: true }));
+function badRequest(res, msg) {
+  return json(res, 400, { ok: false, error: msg });
+}
 
-app.post("/api/login", async (req, res) => {
+function unauthorized(res, msg = "Unauthorized") {
+  return json(res, 401, { ok: false, error: msg });
+}
+
+function notFound(res) {
+  return json(res, 404, { ok: false, error: "Not found" });
+}
+
+function cors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
+async function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => (data += chunk));
+    req.on("end", () => resolve(data));
+    req.on("error", reject);
+  });
+}
+
+function verifyJWT(req) {
+  const auth = req.headers.authorization || "";
+  const m = auth.match(/^Bearer\s+(.+)$/i);
+  if (!m) return { ok: false };
   try {
-    const { username, password } = req.body || {};
-    if (!username || !password) return res.status(400).json({ error: "Missing credentials" });
-    if (!ADMIN_PASS_HASH) return res.status(500).json({ error: "Missing ADMIN_PASS_HASH" });
-
-    if (username !== ADMIN_USER) return res.status(401).json({ error: "Invalid credentials" });
-
-    const ok = await bcrypt.compare(password, ADMIN_PASS_HASH);
-    if (!ok) return res.status(401).json({ error: "Invalid credentials" });
-
-    return res.json({ token: signToken({ username }) });
-  } catch (e) {
-    return res.status(500).json({ error: "Server error" });
+    const payload = jwt.verify(m[1], JWT_SECRET);
+    return { ok: true, payload };
+  } catch {
+    return { ok: false };
   }
-});
+}
 
-app.get("/api/me", authRequired, (req, res) => {
-  res.json({ user: { username: req.user.username } });
-});
+function makeId() {
+  return "n_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
 
-app.get("/api/posts", (req, res) => {
-  const db = readDB();
-  const posts = (db.posts || []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.json({ posts });
-});
+export default async function handler(req, res) {
+  cors(res);
 
-app.post("/api/posts", authRequired, upload.single("image"), (req, res) => {
-  const { title, body, sourceUrl } = req.body || {};
-  if (!title) return res.status(400).json({ error: "Title is required" });
-
-  const db = readDB();
-
-  const post = {
-    id: nanoid(12),
-    title: String(title),
-    body: body ? String(body) : "",
-    sourceUrl: sourceUrl ? String(sourceUrl) : "",
-    imageUrl: req.file ? `/uploads/${req.file.filename}` : "",
-    createdAt: new Date().toISOString()
-  };
-
-  db.posts = db.posts || [];
-  db.posts.unshift(post);
-  writeDB(db);
-
-  res.status(201).json({ post });
-});
-
-app.delete("/api/posts/:id", authRequired, (req, res) => {
-  const { id } = req.params;
-  const db = readDB();
-  const before = db.posts?.length || 0;
-
-  const post = (db.posts || []).find(p => p.id === id);
-  db.posts = (db.posts || []).filter(p => p.id !== id);
-  writeDB(db);
-
-  if (post?.imageUrl?.startsWith("/uploads/")) {
-    const fp = path.join(UPLOADS_DIR, path.basename(post.imageUrl));
-    fs.unlink(fp, () => {});
+  if (req.method === "OPTIONS") {
+    res.statusCode = 204;
+    return res.end();
   }
 
-  res.json({ deleted: before - db.posts.length });
-});
+  const url = new URL(req.url, "http://localhost");
+  const pathname = url.pathname;
 
-// Clean routes without .html
-app.get("/login", (req, res) => res.sendFile(path.join(PUBLIC_DIR, "login.html")));
-app.get("/dashboard", (req, res) => res.sendFile(path.join(PUBLIC_DIR, "dashboard.html")));
-app.get("/", (req, res) => res.sendFile(path.join(PUBLIC_DIR, "index.html")));
+  // ===== Health =====
+  if (pathname === "/api/health" && req.method === "GET") {
+    return json(res, 200, { ok: true, status: "up" });
+  }
 
-// Vercel: export app (no listen)
-export default app;
+  // ===== Login =====
+  if (pathname === "/api/login" && req.method === "POST") {
+    let bodyText = "";
+    try {
+      bodyText = await readBody(req);
+    } catch {
+      return badRequest(res, "Failed to read body");
+    }
+
+    let body;
+    try {
+      body = JSON.parse(bodyText || "{}");
+    } catch {
+      return badRequest(res, "Body must be JSON");
+    }
+
+    const { username, password } = body || {};
+    if (username !== ADMIN_USER || password !== ADMIN_PASSWORD) {
+      return unauthorized(res, "Invalid credentials");
+    }
+
+    const token = jwt.sign({ sub: username, role: "admin" }, JWT_SECRET, { expiresIn: "7d" });
+    return json(res, 200, { ok: true, token });
+  }
+
+  // ===== Public: list news =====
+  if (pathname === "/api/news" && req.method === "GET") {
+    const news = getAllNews();
+    return json(res, 200, { ok: true, news });
+  }
+
+  // ===== Admin: add news =====
+  if (pathname === "/api/news" && req.method === "POST") {
+    const v = verifyJWT(req);
+    if (!v.ok) return unauthorized(res);
+
+    let bodyText = "";
+    try {
+      bodyText = await readBody(req);
+    } catch {
+      return badRequest(res, "Failed to read body");
+    }
+
+    let body;
+    try {
+      body = JSON.parse(bodyText || "{}");
+    } catch {
+      return badRequest(res, "Body must be JSON");
+    }
+
+    const text = String(body?.text || "").trim();
+    const source = String(body?.source || "").trim();
+    const imageUrl = String(body?.imageUrl || "").trim();
+
+    if (!text) return badRequest(res, "text is required");
+
+    const item = {
+      id: makeId(),
+      text,
+      source,
+      imageUrl,
+      createdAt: new Date().toISOString()
+    };
+
+    if (!Array.isArray(runtimeNewsCache)) runtimeNewsCache = [];
+    runtimeNewsCache.unshift(item);
+
+    // محاولة كتابة للملف (هتفشل على Vercel غالباً لأنه Read-only)
+    // فبنسكت عن الخطأ.
+    try {
+      const fileNews = readNewsFromFile();
+      const next = { news: [item, ...fileNews] };
+      fs.writeFileSync(DATA_PATH, JSON.stringify(next, null, 2), "utf8");
+    } catch {}
+
+    return json(res, 201, { ok: true, item });
+  }
+
+  return notFound(res);
+}
