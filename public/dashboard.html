@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-  <title>لوحة التحكم - موقع الأخبار</title>
+  <title>لوحة التحكم - موقع ضحايا رامز ليڤل الوحش</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -797,7 +797,7 @@
           </div>
           <div class="site-title">
             <h1>لوحة تحكم الأدمن</h1>
-            <p>إدارة محتوى موقع الأخبار</p>
+            <p>إدارة محتوى موقع ضحايا رامز ليڤل الوحش</p>
           </div>
         </div>
         
@@ -828,7 +828,7 @@
             </div>
             <div class="stat-info">
               <h3 id="totalNews">0</h3>
-              <p>إجمالي الأخبار</p>
+              <p>إجمالي الضحايا</p>
             </div>
           </div>
           
@@ -838,7 +838,7 @@
             </div>
             <div class="stat-info">
               <h3 id="todayNews">0</h3>
-              <p>أخبار اليوم</p>
+              <p>ضحايا اليوم</p>
             </div>
           </div>
           
@@ -848,7 +848,7 @@
             </div>
             <div class="stat-info">
               <h3 id="withImages">0</h3>
-              <p>أخبار بالصور</p>
+              <p>ضحايا بالصور</p>
             </div>
           </div>
           
@@ -867,7 +867,7 @@
         <div class="form-card">
           <div class="card-title">
             <i class="fas fa-plus-circle"></i>
-            <h2>إضافة خبر جديد</h2>
+            <h2>إضافة ضحية جديد</h2>
           </div>
           
           <form id="addNewsForm">
@@ -876,7 +876,7 @@
               <textarea 
                 id="newsText" 
                 class="form-control" 
-                placeholder="أدخل نص الخبر هنا..." 
+                placeholder="أدخل اسم الضحية هنا..." 
                 required
                 rows="5"
               ></textarea>
@@ -893,7 +893,7 @@
             </div>
             
             <div class="form-group">
-              <label class="form-label">صورة الخبر (اختياري)</label>
+              <label class="form-label">صورة الضحية (اختياري)</label>
               <div class="file-upload">
                 <input type="file" id="newsImage" class="file-input" accept="image/*">
                 <label for="newsImage" class="file-label" id="fileLabel">
@@ -912,7 +912,7 @@
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" id="publishBtn">
                 <i class="fas fa-paper-plane"></i>
-                <span>نشر الخبر</span>
+                <span>نشر الضحية</span>
               </button>
               <button type="reset" class="btn btn-secondary" id="resetBtn">
                 <i class="fas fa-undo"></i>
@@ -923,7 +923,7 @@
           
           <div class="message" id="successMessage">
             <i class="fas fa-check-circle"></i>
-            <span>تم نشر الخبر بنجاح!</span>
+            <span>تم نشر الضحية بنجاح!</span>
           </div>
           
           <div class="message" id="errorMessage">
@@ -937,7 +937,7 @@
           <div class="news-list-header">
             <div class="news-list-title">
               <i class="fas fa-list"></i>
-              <h2>الأخبار المنشورة</h2>
+              <h2>الضحايا المنشورة</h2>
             </div>
             <button class="refresh-news-btn" id="refreshNewsBtn">
               <i class="fas fa-sync-alt"></i>
@@ -967,7 +967,7 @@
             <div class="quick-stat-item">
               <div class="quick-stat-label">
                 <i class="fas fa-newspaper" style="background-color: #4361ee;"></i>
-                <span>الأخبار المنشورة</span>
+                <span>الضحايا المنشورة</span>
               </div>
               <div class="quick-stat-value" id="sidebarTotalNews">0</div>
             </div>
@@ -975,7 +975,7 @@
             <div class="quick-stat-item">
               <div class="quick-stat-label">
                 <i class="fas fa-image" style="background-color: #4cc9f0;"></i>
-                <span>أخبار بالصور</span>
+                <span>الضحايا بالصور</span>
               </div>
               <div class="quick-stat-value" id="sidebarWithImages">0</div>
             </div>
